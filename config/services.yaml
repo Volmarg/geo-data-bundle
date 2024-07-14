@@ -1,0 +1,75 @@
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    GeoTool\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+            - '../src/Tests/'
+
+    # Info: keep in mind that the `Api` tools are executed one after another
+    #       this is important as for example lot of logic calls one `Api` & tries to fetch data from it
+    #       only if no data was found then other `Api` will be used,
+    #       so it's preferred to fetch something from free or cheaper Api first
+
+    GeoTool\Controller\TestController:
+        public: true
+
+    GuzzleHttp\Client:
+        public: true
+
+    GeoTool\Service\ConfigLoader\ApiConfigLoaderService:
+        calls:
+            - setPositionStackApiCredential: ['%position_stack.api.credentials.login%', '%position_stack.api.credentials.password%', '%position_stack.api.credentials.domain%']
+
+    # Distance tool
+    GeoTool\Service\DistanceTool\DistanceToolService:
+        calls:
+            - setDistanceToolApis: [[
+                '@GeoTool\Service\DistanceTool\OpenRouteService\General\OpenRouteServiceTool',
+                '@GeoTool\Service\DistanceTool\Local\LocalTool']]
+
+    ## Local tool
+    GeoTool\Service\DistanceTool\Local\LocalTool:
+        public: true
+
+    ## Free map
+    GeoTool\Service\DistanceTool\OpenRouteService\General\OpenRouteServiceTool:
+        public: true
+
+    # Coordinate tool
+    GeoTool\Service\CoordinateTool\CoordinateToolService:
+        calls:
+            - setCoordinationToolApis: [[
+                '@GeoTool\Service\CoordinateTool\OpenStreetMap\OpenStreetMapInterface']]
+
+    ## OpenStreetMap
+    GeoTool\Service\CoordinateTool\OpenStreetMap\General\OpenStreetMapTool:
+        public: true
+
+    GeoTool\Service\CoordinateTool\OpenStreetMap\OpenStreetMapInterface: '@GeoTool\Service\CoordinateTool\OpenStreetMap\General\OpenStreetMapTool'
+
+    # Location tool
+    GeoTool\Service\LocationTool\LocationToolsService:
+        calls:
+            - setLocationToolApis: [[
+                '@GeoTool\Service\LocationTool\Nominatim\General\NominatimLocationTool',
+                '@GeoTool\Service\LocationTool\PositionStack\PositionStackInterface']]
+
+    ## Position stack
+    GeoTool\Service\LocationTool\PositionStack\General\PositionStackLocationTool:
+        public: true
+
+    GeoTool\Service\LocationTool\PositionStack\PositionStackInterface: '@GeoTool\Service\LocationTool\PositionStack\General\PositionStackLocationTool'
+
+    ## Nominatim
+    GeoTool\Service\LocationTool\Nominatim\General\NominatimLocationTool:
+        public: true
+
+    GeoTool\Service\CountryCode\FrenchDivisionCode:
+        public: true
